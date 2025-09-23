@@ -27,4 +27,4 @@ const ImageUpload = async(filePath) => {
     return null;
   }
 }
-export {ImageUpload};
+export {ImageUpload}

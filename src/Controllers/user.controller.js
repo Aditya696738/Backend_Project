@@ -29,19 +29,24 @@ const registerUser = asyncHandler(async (req , res) => {
             fullName, email , userName , password
         } = req.body
 
-        console.log("email" , "username" , email , userName);
+        //console.log(req.body);
+
+       // console.log("email" , "username" , email , userName);
 
         if([ fullName, email , userName , password].some((field) => field?.trim() === "")
         ){
             throw new APIerror(404 , "fullNmae is required");
         }
 
-        const existed_User = await user.findOne({
+        // calling and talking the database
+        const existed_User = await User.findOne({
             $or : [{ userName } , { email }]
         })
         if(existed_User){
             throw new APIerror(409 , "user is already exist");
         }
+
+        console.log(req.files);
 
         // by multer
         const local_avatar_Path = req.files?.avatar[0]?.path ;
@@ -50,40 +55,43 @@ const registerUser = asyncHandler(async (req , res) => {
             throw new APIerror(404 , "Avatar file is required");
         }
 
-        const local_coverImage_Path = req.files?.coverImage[0]?.path ;
-        // checking
-        if(!local_coverImage_Path){
-            throw new APIerror(404 , "coverImage file is required");
-        }
+        //const local_coverImage_Path = req.files?.coverImage[0]?.path ;
 
+        let local_coverImage_Path;
+        if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
+            local_coverImage_Path = req.files.coverImage[0].path;
+        }
+ 
+       /* if(!local_coverImage_Path){
+            throw new APIerror(404 , "coverImage file is required");
+        } */
+
+        
         const avatar = await ImageUpload(local_avatar_Path);
         if(!avatar){
             throw new APIerror();
         }
 
         const coverImage = await ImageUpload(local_coverImage_Path)
-        if(!coverImage){
-            throw new APIerror();
-        }
+        
 
         // entry in dataBase
-        const user = await User.create({
+        const createdUser = await User.create({
             fullName,
-            avatar:avatar.url,
-            coverImage:coverImage ?.url || " ",
+            avatar: avatar.url,
+            coverImage: coverImage?.url || " ",
             email,
             password,
-            userName:userName
+            userName: userName
         });
 
-
-        const createdUser = await user.findById(user._id).select("_password _refreshToken");
-        if(!createdUser){
+        const userWithoutSensitiveFields = await User.findById(createdUser._id).select("-password -refreshToken");
+        if(!userWithoutSensitiveFields){
             throw new APIerror(505 , "Something went wrong while registering");
         }
         return res.status(201).json(
-            new APIresponse(200 , createdUser , "user registration succesfully")
+            new APIresponse(200 , userWithoutSensitiveFields , "user registration succesfully")
         )
 })
 
-export default registerUser;
+export default registerUser; 

@@ -19,6 +19,10 @@ const ImageUpload = async(Local_file_Path) => {
     // file is uploaded
 
     console.log("url of uploaded image : " , reponse.url)
+
+    //console.log(reponse);
+
+    fs.unlinkSync(Local_file_Path)
     return reponse;
 
   } catch (error) {

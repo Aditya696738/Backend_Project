@@ -3,7 +3,30 @@ import APIerror from "../Utils/APIerror.js";
 import { User } from "../Models/user.models.js";
 import { ImageUpload } from "../Utils/Cloudinary.js";
 import { APIresponse } from "../Utils/APIresponse.js";
+import { ref } from "process";
 
+//  method for access the accessToken & refreshToken
+  const generate_Access_And_RefreshToken = async(userId) => {
+        try {
+            const user = await User.findById(userId);
+            
+            const accessToken = user.generateAccessToken();
+            const refreshToken = user.generateRefreshToken();
+
+            // put refreshToken in database
+            user.refreshToken = refreshToken
+            await user.save({validateBeforeSave : false});
+
+            // return to user
+            return {accessToken , refreshToken}
+
+        } catch (error) {
+            throw new APIerror(400 , "BAD REQUEST : can not generate Tokens");
+        }
+    }
+
+
+// registering a user
 const registerUser = asyncHandler(async (req , res) => {
 
     // example
@@ -25,9 +48,7 @@ const registerUser = asyncHandler(async (req , res) => {
         9. return response
          */
 
-        const {
-            fullName, email , userName , password
-        } = req.body
+        const {fullName, email , userName , password} = req.body
 
         //console.log(req.body);
 
@@ -94,4 +115,58 @@ const registerUser = asyncHandler(async (req , res) => {
         )
 })
 
-export default registerUser; 
+// build a user login functanality
+
+const loginUser = asyncHandler(async(req , res) => {
+    // get a data from body
+    const {email , userName , password} = req.body;
+    // check a user have email or userName
+    if(!email || !userName){
+        throw new APIerror(404 , "userName or email is required");
+    }
+    // find a user by their email or userName
+    const user = await User.findOne({
+        $or : [{userName} , {email}]
+    })
+    // check the user is present or not
+    if(!user){
+        throw new APIerror(404 , "user is not exist");
+    }
+
+    // check the password is validate or not
+    const isPasswordValidate = await user.isPasswordCorrect(password)
+
+    if(!isPasswordValidate){
+        throw new APIerror(404 , "PASSWORD is InCorrect");
+    }
+
+    // call a generate_Access_And_RefreshToken method
+    const {accessToken , refreshToken} = await generate_Access_And_RefreshToken(user._id);
+
+    const loggedInUser = user.findById(user._id).select("-password -refreshToken");
+
+    // send Cookies
+    const options = {
+        // these are only modify by server
+        httpOnly : true,
+        secure : true
+    }
+    return res.status(200)
+    .cookie("accessToken" , accessToken , options)
+    .cookie("refreshToken" , refreshToken , options)
+    .json(
+        new APIresponse(200 , {
+            user : loggedInUser,
+            accessToken,
+            refreshToken
+        } , "user login successful")
+    )
+});
+
+// logout functanality
+
+const logOutUser = asyncHandler(async(req , res) => {})
+
+export {
+    registerUser , loginUser , logOutUser
+}                                    

@@ -13,7 +13,22 @@ A full-fledged backend web application built with Node.js, Express, and MongoDB.
 
 ## Project Structure
 
-BackendProject/ ├── .env ├── package.json ├── public/ ├── src/ ├── App.js ├── Constants.js ├── Index.js ├── Controllers/ ├── DB/ ├── Middlewares/ ├── Models/ ├── Routes/ └── Utils/
+```
+/BackendProject
+├── .env
+├── package.json
+├── src/
+│   ├── controllers/
+│   ├── db/
+│   ├── middlewares/
+│   ├── models/
+│   ├── routes/
+│   └── utils/
+├── public/
+├── constants.js
+├── app.js
+├── index.js
+```
 
 
 
